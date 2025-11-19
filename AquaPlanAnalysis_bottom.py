@@ -289,7 +289,7 @@ end = time.time()
 print(f"Runtime before Urmy parameter Calcs: {end - start:.2f} seconds")
 
 # Plot Sv values for a single ping, i.e. sv(range)
-one_ping = sv_sel_db.sel(ping_time=sv_sel_db.ping_time[1])
+one_ping = sv_sel_db.sel(ping_time=sv_sel_db.ping_time[10])
 OnePing = one_ping.hvplot(
     x='sv',       # value on x-axis
     y='range',
@@ -305,33 +305,85 @@ hv.save(OnePing , 'single_ping.png')
 
 
 
+# ||||||||||| Keep Sv only where range <= bottom_depth |||||||||||||||||||||||
+# ||||||||||  Mask values below bottom  |||||||||||||||||||||||||||||||||||||
+
+# 1) Make mask
+Shifted_Bottom = 2 # m
+mask = sv_sel_db.range <= (bottom_depth - Shifted_Bottom)
+
+# 2) Apply mask
+sv_above_bottom = sv_sel_db.where(mask)
+
+# |||||||||||||||||||||||||||||||||||||||||||||||||
+
+plot_above_bottom = sv_above_bottom.hvplot(
+    x='ping_time',
+    y='range',
+    cmap='viridis',
+    clim=(vmin, vmax),
+    width=1200,
+    height=600,
+    xlabel='Ping Time',
+    ylabel='Range (m)',
+    title='Sv above detected bottom',
+)
+
+plot_above_bottom = plot_above_bottom.opts(ylim=(ymax, ymin))
+
+hv.save(plot_above_bottom, "sv_above_bottom_38kHz.png")
+
+# Plot Sv values for a single ping, i.e. sv(range)
+one_ping = sv_above_bottom.sel(ping_time=sv_above_bottom.ping_time[10])
+OnePing = one_ping.hvplot(
+    x='sv',       # value on x-axis
+    y='range',
+    invert_yaxis=True,
+    title='Sv profile (single ping)',
+    xlabel='Sv (dB)',
+    ylabel='Range (m)',
+    width=600,
+    height=600
+)
+
+hv.save(OnePing , 'single_ping_above_bottom.png')
+
+
+#|||||||||||||||||||||||||||||||||||
+# Sv_linear = 10^(Sv_dB / 10)
+
+sv_linear = xr.apply_ufunc(
+    lambda x: 10 ** (x / 10),
+    sv_above_bottom,
+    dask='allowed'
+)
 # Urmy parameters: =============================================
-# sv_values = sv_sel.values
-# print(sv_values.shape)  # (40, 76)
-# print(len(sv_values[0]))
+sv_values = sv_sel.values
+print(sv_values.shape)  # (40, 76)
+print(len(sv_values[0]))
 
-# # sum across the range dimension (i.e. collapse depth bins into one value per ping)
-# sv_sum_range = sv_sel.sum(dim="range")
+# sum across the range dimension (i.e. collapse depth bins into one value per ping)
+sv_sum_range = sv_sel.sum(dim="range")
 
-# # From Urmy parameters Urmy et al 2012 - ICES J Marine Science
-# Integrate_sv_dz = ( Delta_R * sv_sum_range ) # as a function of ping time
-# # Abundance = 10*np.log10( Integrate_sv_dz ) # as a function of ping time
+# From Urmy parameters Urmy et al 2012 - ICES J Marine Science
+Integrate_sv_dz = ( Delta_R * sv_sum_range ) # as a function of ping time
+# Abundance = 10*np.log10( Integrate_sv_dz ) # as a function of ping time
 
-# # Abundance in dB using xarray's built-in log10
-# # Abundance
-# Abundance = xr.apply_ufunc(
-#     np.log10, 
-#     Integrate_sv_dz,
-#     dask='allowed'
-# ) * 10
+# Abundance in dB using xarray's built-in log10
+# Abundance
+Abundance = xr.apply_ufunc(
+    np.log10, 
+    Integrate_sv_dz,
+    dask='allowed'
+) * 10
 
-# fig, ax = plt.subplots(figsize=(12, 6))
-# ax.plot(sv_sel.ping_time, Abundance)
-# ax.set_title('Abundance')
-# # ax.set_xlabel('Ping Time (d HH:MM)')
-# ax.set_xlabel=('Ping Time (mm-dd HH)')
-# fig.savefig('Abundance.png', dpi=150)
-# plt.close(fig)
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(sv_sel.ping_time, Abundance)
+ax.set_title('Abundance')
+# ax.set_xlabel('Ping Time (d HH:MM)')
+ax.set_xlabel=('Ping Time (mm-dd HH)')
+fig.savefig('Abundance.png', dpi=150)
+plt.close(fig)
 
 
 # # Density = 10*np.log10( Integrate_sv_dz/(end_range - start_range) )
