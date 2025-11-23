@@ -1,3 +1,6 @@
 .venv/
 *.png
 *.csv
+
+OutputData/*.png
+OutputData/

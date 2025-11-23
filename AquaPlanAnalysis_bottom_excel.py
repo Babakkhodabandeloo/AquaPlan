@@ -80,6 +80,20 @@ ping_times = data['ping_time']
 print(ping_times)
 print(data['frequency'])
 
+# Excel file:
+ExcelFolder = '/data/prosjekt/16034-AquaPlan/EXPERIMENTS/Herring_Experiments/'
+df_excel = pd.read_excel(os.path.join(ExcelFolder, 'treatments_herring.xlsx'))
+df_excel['Start'] = pd.to_datetime(df_excel['Start'], format='%m/%d/%Y %H:%M')
+df_excel['End']   = pd.to_datetime(df_excel['End'],   format='%m/%d/%Y %H:%M')
+print('df_excel.head(): ', df_excel.head())
+print(df_excel['Start'])
+print(df_excel['End'])
+# select Block No "BlockNum":
+BlockNum = 1
+df_block1 = df_excel[df_excel['BlockNo'] == BlockNum]
+print(df_block1)
+print(df_block1['Start'])
+print(df_block1['End'])
 # Select sv between times at 70 kHz
 # sv_sel = data['sv'].sel(
 #     ping_time=slice(start_time, end_time),
@@ -457,7 +471,7 @@ fig, ax1 = plt.subplots(figsize=(12, 6))
 color1 = [0, 0, 1]
 ax1.plot(sv_sel.ping_time, Abundance, color=color1, label='Abundance')
 ax1.set_xlabel('Ping Time', fontsize=14)            # increase xlabel font
-ax1.set_ylabel('Abundance', fontsize=14)           # increase ylabel font
+ax1.set_ylabel('Abundance (dB)', fontsize=14)           # increase ylabel font
 ax1.tick_params(axis='y', colors=color1, labelsize=12, width=2, length=6)  # tick size
 ax1.tick_params(axis='x', labelsize=12, width=2, length=6)                # x-axis ticks
 ax1.yaxis.label.set_color(color1)                  # set y-label color
@@ -466,11 +480,29 @@ ax1.yaxis.label.set_color(color1)                  # set y-label color
 color2 = [1, 0, 0]
 ax2 = ax1.twinx()
 ax2.plot(sv_sel.ping_time, CenterofMass, color=color2, label='Center of Mass')
-ax2.set_ylabel('Center of Mass', fontsize=14)
+ax2.set_ylabel('Center of Mass (m)', fontsize=14)
 ax2.tick_params(axis='y', colors=color2, labelsize=12, width=2, length=6)
 ax2.yaxis.label.set_color(color2)
 # Reverse right y-axis
 ax2.invert_yaxis()
+
+# --- Add treatment intervals using df_block1 ---
+for _, row in df_block1.iterrows():
+    start = row['Start']
+    end = row['End']
+    treatment = row['Treatment']
+
+    ax1.axvspan(start, end, alpha=0.3, color=[1,0.8,0.5])  # light shading
+    ax1.text(
+        x=start + (end - start) / 2,   # middle of interval
+        y=ax1.get_ylim()[1] * 1.02,    # near top of plot
+        s=treatment,
+        ha='center',
+        va='top',
+        fontsize=10,
+        rotation=90
+    )
+
 
 # --- Title ---
 plt.title('Abundance and Center of Mass vs Time', fontsize=16)
