@@ -47,8 +47,8 @@ Threshold = -90 # (dB) Filter the data and ignore data below Threshold (dB)
 Transducer_Depth = 254 #m
 
 # Time selection
-start_time = "2024-11-03 14:44:00" # Select subset of data
-end_time   = "2024-11-03 18:44:00" # Select subset of data 
+start_time = "2024-11-13 14:30:00" # Select subset of data
+end_time   = "2024-11-13 16:15:00" # Select subset of data 
 
 # Range selection
 start_range = 5 # m
@@ -61,7 +61,8 @@ if local==1:
     # f = '/mnt/z/tmp/test_BlueEco/LoVe/2018/DayExample/out/netcdfLoVe_2018_N1.test.zarr'
     print(' Data in local?')
 elif local==0:
-    f='/data/prosjekt/16034-AquaPlan/ACOUSTIC/GRIDDED_AquaPlanTest.zarr'
+    # f='/data/prosjekt/16034-AquaPlan/ACOUSTIC/GRIDDED_AquaPlanTest_3_6Nov.zarr'
+    f='/data/prosjekt/16034-AquaPlan/ACOUSTIC/GRIDDED_AquaPlanTest_7_13Nov.zarr'    
     # f='/data/crimac-scratch/tmp/test_BlueEco/LoVe/2018/MonthExample2/out/LoVe_2018_N1_2.month_sv.zarr'
     # f='/data/crimac-scratch/tmp/test_BlueEco/LoVe/2018/MonthExample1/out/LoVe_2018_N1_1.month_sv.zarr'
     # f='/data/crimac-scratch/tmp/test_BlueEco/LoVe/2018/MonthExample/out/LoVe_2018_N1.month_sv.zarr'
@@ -82,14 +83,15 @@ print(data['frequency'])
 
 # Excel file:
 ExcelFolder = '/data/prosjekt/16034-AquaPlan/EXPERIMENTS/Herring_Experiments/'
-df_excel = pd.read_excel(os.path.join(ExcelFolder, 'treatments_herring.xlsx'))
+df_excel = pd.read_excel(os.path.join(ExcelFolder, 'treatments_herring_Modified.xlsx'))
 df_excel['Start'] = pd.to_datetime(df_excel['Start'], format='%m/%d/%Y %H:%M')
 df_excel['End']   = pd.to_datetime(df_excel['End'],   format='%m/%d/%Y %H:%M')
 print('df_excel.head(): ', df_excel.head())
 print(df_excel['Start'])
 print(df_excel['End'])
+
 # select Block No "BlockNum":
-BlockNum = 1
+BlockNum = 5
 df_block1 = df_excel[df_excel['BlockNo'] == BlockNum]
 print(df_block1)
 print(df_block1['Start'])
@@ -197,8 +199,8 @@ vmax = -50
 
 
 #==== Bottom detection ==================
-sv_threshold = -35
-grad_threshold = 1  # adjust
+sv_threshold = -28
+grad_threshold = 2  # adjust
 
 # Compute gradient (dSv/dr)
 dsv = sv_sel_db.differentiate("range")
@@ -300,7 +302,7 @@ end = time.time()
 print(f"Runtime before Urmy parameter Calcs: {end - start:.2f} seconds")
 
 # Plot Sv values for a single ping, i.e. sv(range)
-one_ping = sv_sel_db.sel(ping_time=sv_sel_db.ping_time[100])
+one_ping = sv_sel_db.sel(ping_time=sv_sel_db.ping_time[1])
 OnePing = one_ping.hvplot(
     x='sv',       # value on x-axis
     y='range',
@@ -320,7 +322,7 @@ hv.save(OnePing , 'OutputData/single_ping.png')
 # ||||||||||  Mask values below bottom  |||||||||||||||||||||||||||||||||||||
 
 # 1) Make mask
-Shifted_Bottom = 3 # m
+Shifted_Bottom = 4 # m
 mask = sv_sel_db.range <= (bottom_depth - Shifted_Bottom)
 
 # 2) Apply mask
@@ -345,7 +347,7 @@ plot_above_bottom = plot_above_bottom.opts(ylim=(ymax, ymin))
 hv.save(plot_above_bottom, "OutputData/sv_above_bottom_38kHz.png")
 
 # Plot Sv values for a single ping, i.e. sv(range)
-one_ping = sv_above_bottom.sel(ping_time=sv_above_bottom.ping_time[100])
+one_ping = sv_above_bottom.sel(ping_time=sv_above_bottom.ping_time[1])
 OnePing = one_ping.hvplot(
     x='sv',       # value on x-axis
     y='range',
@@ -510,7 +512,7 @@ plt.title('Abundance and Center of Mass vs Time', fontsize=16)
 # --- Combined legend ---
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
-ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right', fontsize=12)
+ax1.legend(lines1 + lines2, labels1 + labels2, loc='lower left', fontsize=12)
 
 # --- Save ---
 fig.savefig('OutputData/Abundance_CoM.png', dpi=150)
